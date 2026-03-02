@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import Map, { Marker, NavigationControl } from 'react-map-gl/mapbox';
 import { CapacityMarker, mockCapacityData } from '@/lib/mock-capacity-data';
 import { Transition } from '@headlessui/react';
-import { X, Mail, Phone, Plus, Zap } from 'lucide-react';
+import { X, Mail, Phone, Plus, Zap, TrendingUp, Users, BarChart3 } from 'lucide-react';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 interface HoveredMarker {
@@ -92,6 +92,19 @@ export default function CapacityMap() {
     });
   }, [allMarkers, filterType, filterVoltage, minCapacity, maxCapacity]);
 
+  // Calculate aggregate stats
+  const stats = useMemo(() => {
+    const sellers = allMarkers.filter(m => m.type === 'seller');
+    const buyers = allMarkers.filter(m => m.type === 'buyer');
+    const totalCapacity = sellers.reduce((sum, m) => sum + m.capacity_mw, 0);
+    
+    return {
+      sellersCount: sellers.length,
+      buyersCount: buyers.length,
+      totalCapacity: Math.round(totalCapacity * 10) / 10 // Round to 1 decimal
+    };
+  }, [allMarkers]);
+
   // Calculate matches for selected marker
   const matches = useMemo(() => {
     if (!selectedMarker) return [];
@@ -157,19 +170,22 @@ export default function CapacityMap() {
   }
 
   return (
-    <div className="relative h-screen w-full">
+    <div className="relative h-screen w-full overflow-hidden">
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-10 bg-slate-900/95 backdrop-blur-sm border-b border-slate-700 shadow-xl">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-0">
           <div>
-            <h1 className="text-xl font-bold text-white">E-Grid Capacity Marketplace</h1>
-            <p className="text-sm text-gray-400">Connect buyers and sellers of grid capacity</p>
+            <h1 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
+              <Zap className="w-5 h-5 md:w-6 md:h-6 text-blue-400" />
+              GridCapacity
+            </h1>
+            <p className="text-xs md:text-sm text-gray-400">The secondary market for grid connections</p>
           </div>
           <button
             onClick={() => setShowListModal(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-lg transition-all shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 md:px-5 py-2 md:py-2.5 rounded-lg transition-all shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 text-sm md:text-base w-full md:w-auto justify-center"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4 md:w-5 md:h-5" />
             List Your Capacity
           </button>
         </div>
@@ -240,8 +256,8 @@ export default function CapacityMap() {
         ))}
       </Map>
 
-      {/* Filter Panel */}
-      <div className="absolute top-24 left-8 bg-slate-800/95 backdrop-blur-sm text-white px-6 py-5 rounded-lg shadow-xl border border-slate-700 max-w-md">
+      {/* Filter Panel - Responsive */}
+      <div className="absolute top-20 md:top-24 left-2 md:left-8 right-2 md:right-auto bg-slate-800/95 backdrop-blur-sm text-white px-4 md:px-6 py-4 md:py-5 rounded-lg shadow-xl border border-slate-700 md:max-w-md">
         <h3 className="font-semibold mb-4 text-sm uppercase tracking-wide text-gray-300">Filter Capacity</h3>
         
         <div className="space-y-4">
@@ -253,7 +269,7 @@ export default function CapacityMap() {
                 <button
                   key={type}
                   onClick={() => setFilterType(type)}
-                  className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                  className={`flex-1 px-3 py-2 rounded-md text-xs md:text-sm font-medium transition-all ${
                     filterType === type
                       ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/50'
                       : 'bg-slate-700 text-gray-300 hover:bg-slate-600'
@@ -268,12 +284,12 @@ export default function CapacityMap() {
           {/* Voltage Filter */}
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-2">Voltage</label>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {(['all', '11kV', '33kV', '132kV'] as FilterVoltage[]).map((voltage) => (
                 <button
                   key={voltage}
                   onClick={() => setFilterVoltage(voltage)}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                  className={`px-3 py-2 rounded-md text-xs md:text-sm font-medium transition-all ${
                     filterVoltage === voltage
                       ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/50'
                       : 'bg-slate-700 text-gray-300 hover:bg-slate-600'
@@ -297,7 +313,7 @@ export default function CapacityMap() {
                 onChange={(e) => setMinCapacity(Number(e.target.value))}
                 min={0}
                 max={maxCapacity}
-                className="w-20 px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-16 md:w-20 px-2 md:px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Min"
               />
               <div className="flex-1 h-px bg-slate-600" />
@@ -307,7 +323,7 @@ export default function CapacityMap() {
                 onChange={(e) => setMaxCapacity(Number(e.target.value))}
                 min={minCapacity}
                 max={50}
-                className="w-20 px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-16 md:w-20 px-2 md:px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Max"
               />
             </div>
@@ -318,6 +334,12 @@ export default function CapacityMap() {
             <p className="text-xs text-gray-400">
               Showing <span className="font-semibold text-blue-400">{filteredMarkers.length}</span> of {allMarkers.length} listings
             </p>
+            {filteredMarkers.length === 0 && (
+              <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                <p className="text-sm text-amber-400 font-medium">No matches found</p>
+                <p className="text-xs text-amber-300/70 mt-1">Try adjusting your filters to see more listings</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -325,7 +347,7 @@ export default function CapacityMap() {
       {/* Hover Tooltip */}
       {hoveredMarker && !selectedMarker && (
         <div
-          className="fixed z-50 pointer-events-none"
+          className="fixed z-50 pointer-events-none hidden md:block"
           style={{
             left: hoveredMarker.x,
             top: hoveredMarker.y - 10,
@@ -360,7 +382,81 @@ export default function CapacityMap() {
         </div>
       )}
 
-      {/* Sidebar */}
+      {/* Welcome Panel - Shows when nothing is selected */}
+      {!selectedMarker && (
+        <div className="absolute right-2 md:right-8 top-20 md:top-24 bottom-20 md:bottom-8 w-[calc(100%-1rem)] md:w-96 bg-slate-900/98 backdrop-blur-sm border border-slate-700 shadow-2xl rounded-lg overflow-y-auto p-6">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-500/20 rounded-full mb-4">
+              <Zap className="w-8 h-8 text-blue-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">Welcome to GridCapacity</h2>
+            <p className="text-gray-400 text-sm">Click a marker on the map to view capacity details</p>
+          </div>
+
+          {/* Aggregate Stats */}
+          <div className="grid grid-cols-1 gap-4 mb-8">
+            <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wide">Sellers</p>
+                  <p className="text-2xl font-bold text-white">{stats.sellersCount}</p>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500">Offering grid capacity</p>
+            </div>
+
+            <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center">
+                  <Users className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wide">Buyers</p>
+                  <p className="text-2xl font-bold text-white">{stats.buyersCount}</p>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500">Seeking capacity</p>
+            </div>
+
+            <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                  <BarChart3 className="w-5 h-5 text-green-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wide">Total Capacity</p>
+                  <p className="text-2xl font-bold text-white">{stats.totalCapacity}</p>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500">Megawatts available</p>
+            </div>
+          </div>
+
+          {/* How it works */}
+          <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-700/50">
+            <h3 className="text-sm font-semibold text-gray-300 mb-3">How it works</h3>
+            <ol className="space-y-3 text-sm text-gray-400">
+              <li className="flex gap-3">
+                <span className="flex-shrink-0 w-6 h-6 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                <span>Browse available capacity on the map</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="flex-shrink-0 w-6 h-6 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                <span>Filter by type, voltage, and capacity</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="flex-shrink-0 w-6 h-6 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                <span>View matches and express interest</span>
+              </li>
+            </ol>
+          </div>
+        </div>
+      )}
+
+      {/* Sidebar - Detail View */}
       <Transition
         show={!!selectedMarker}
         enter="transition-transform duration-300 ease-out"
@@ -370,7 +466,7 @@ export default function CapacityMap() {
         leaveFrom="translate-x-0"
         leaveTo="translate-x-full"
       >
-        <div className="fixed right-0 top-0 h-full w-96 bg-slate-900/98 backdrop-blur-sm border-l border-slate-700 shadow-2xl z-50 overflow-y-auto">
+        <div className="fixed right-0 top-0 h-full w-full md:w-96 bg-slate-900/98 backdrop-blur-sm border-l border-slate-700 shadow-2xl z-50 overflow-y-auto">
           {selectedMarker && (
             <div className="p-6">
               {/* Close Button */}
@@ -518,7 +614,7 @@ export default function CapacityMap() {
         leaveFrom="opacity-100"
         leaveTo="opacity-0"
       >
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 md:p-6">
           <Transition
             show={showListModal}
             enter="transition-all duration-300 ease-out"
@@ -531,7 +627,7 @@ export default function CapacityMap() {
             <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-2xl max-w-md w-full p-6">
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-white">List Your Capacity</h2>
+                <h2 className="text-xl md:text-2xl font-bold text-white">List Your Capacity</h2>
                 <button
                   onClick={() => setShowListModal(false)}
                   className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors"
@@ -633,21 +729,34 @@ export default function CapacityMap() {
       </Transition>
 
       {/* Legend */}
-      <div className="absolute bottom-8 left-8 bg-slate-800/90 backdrop-blur-sm text-white px-5 py-4 rounded-lg shadow-xl border border-slate-700">
-        <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide">Capacity Types</h3>
+      <div className="absolute bottom-20 md:bottom-8 left-2 md:left-8 bg-slate-800/90 backdrop-blur-sm text-white px-4 md:px-5 py-3 md:py-4 rounded-lg shadow-xl border border-slate-700">
+        <h3 className="font-semibold mb-3 text-xs md:text-sm uppercase tracking-wide">Capacity Types</h3>
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-            <div className="w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow-md" />
-            <span className="text-sm">Seller Offering</span>
+            <div className="w-3 h-3 md:w-4 md:h-4 rounded-full bg-blue-500 border-2 border-white shadow-md" />
+            <span className="text-xs md:text-sm">Seller Offering</span>
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-4 h-4 rounded-full bg-amber-500 border-2 border-white shadow-md" />
-            <span className="text-sm">Buyer Seeking</span>
+            <div className="w-3 h-3 md:w-4 md:h-4 rounded-full bg-amber-500 border-2 border-white shadow-md" />
+            <span className="text-xs md:text-sm">Buyer Seeking</span>
           </div>
           <div className="flex items-center gap-2 pt-2 border-t border-slate-700">
-            <Zap className="w-4 h-4 text-green-400" />
-            <span className="text-sm">Quick Win (132kV)</span>
+            <Zap className="w-3 h-3 md:w-4 md:h-4 text-green-400" />
+            <span className="text-xs md:text-sm">Quick Win (132kV)</span>
           </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="absolute bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-sm border-t border-slate-700 z-10">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex flex-col md:flex-row items-center justify-between gap-2 text-xs md:text-sm text-gray-400">
+          <p>Built for <span className="font-semibold text-gray-300">Clean Power 2030</span></p>
+          <a 
+            href="mailto:hello@gridcapacity.com" 
+            className="text-blue-400 hover:text-blue-300 transition-colors font-medium"
+          >
+            Express interest → hello@gridcapacity.com
+          </a>
         </div>
       </div>
     </div>
