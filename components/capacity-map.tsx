@@ -53,8 +53,33 @@ export default function CapacityMap() {
   // Local storage for user-submitted listings
   const [userListings, setUserListings] = useState<CapacityMarker[]>([]);
 
+  // UK location presets
+  const ukLocations = [
+    { name: 'London', lat: 51.5074, lng: -0.1278 },
+    { name: 'Manchester', lat: 53.4808, lng: -2.2426 },
+    { name: 'Birmingham', lat: 52.4862, lng: -1.8904 },
+    { name: 'Edinburgh', lat: 55.9533, lng: -3.1883 },
+    { name: 'Leeds', lat: 53.8008, lng: -1.5491 },
+    { name: 'Bristol', lat: 51.4545, lng: -2.5879 },
+    { name: 'Cambridge', lat: 52.2053, lng: 0.1218 },
+    { name: 'Newcastle', lat: 54.9783, lng: -1.6174 },
+    { name: 'Brighton', lat: 50.8198, lng: -0.1370 },
+    { name: 'Bath', lat: 51.3811, lng: -2.3590 },
+    { name: 'Norwich', lat: 52.6369, lng: 1.2974 },
+    { name: 'Liverpool', lat: 53.4084, lng: -2.9916 },
+    { name: 'Canterbury', lat: 51.2787, lng: 1.0789 },
+    { name: 'Plymouth', lat: 50.3755, lng: -4.1427 },
+    { name: 'Belfast', lat: 54.5973, lng: -5.9301 },
+    { name: 'Glasgow', lat: 55.8642, lng: -4.2518 },
+    { name: 'Oxford', lat: 51.7520, lng: -1.2577 },
+    { name: 'Sheffield', lat: 53.3811, lng: -1.4701 },
+    { name: 'Cardiff', lat: 51.4816, lng: -3.1791 },
+    { name: 'Southampton', lat: 50.9097, lng: -1.4044 }
+  ];
+
   // Form state
   const [formData, setFormData] = useState({
+    location: '',
     locationName: '',
     capacity: '',
     voltage: '33kV' as '11kV' | '33kV' | '132kV',
@@ -123,19 +148,26 @@ export default function CapacityMap() {
   }, [selectedMarker, allMarkers]);
 
   // Quick win check
-  const isQuickWin = (marker: CapacityMarker) => marker.voltage === '132kV';
+  const isFastTrack = (marker: CapacityMarker) => marker.voltage === '132kV';
 
   const handleSubmitListing = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Find the selected location's coordinates
+    const selectedLocation = ukLocations.find(loc => loc.name === formData.location);
+    if (!selectedLocation) {
+      alert('Please select a valid location');
+      return;
+    }
+    
     const newListing: CapacityMarker = {
       id: `user-${Date.now()}`,
-      lat: 51.5 + (Math.random() - 0.5) * 5, // Random UK location
-      lng: -1.5 + (Math.random() - 0.5) * 4,
+      lat: selectedLocation.lat,
+      lng: selectedLocation.lng,
       type: 'seller',
       capacity_mw: parseFloat(formData.capacity),
       voltage: formData.voltage,
-      location_name: formData.locationName,
+      location_name: formData.locationName || selectedLocation.name,
       owner: formData.email
     };
     
@@ -145,6 +177,7 @@ export default function CapacityMap() {
     
     // Reset form and close modal
     setFormData({
+      location: '',
       locationName: '',
       capacity: '',
       voltage: '33kV',
@@ -223,11 +256,11 @@ export default function CapacityMap() {
               }}
               onMouseLeave={() => setHoveredMarker(null)}
             >
-              {/* Quick Win Badge */}
-              {isQuickWin(marker) && (
+              {/* Fast Track Badge */}
+              {isFastTrack(marker) && (
                 <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap shadow-lg flex items-center gap-1 z-10">
                   <Zap className="w-3 h-3" />
-                  Quick Win
+                  Fast Track
                 </div>
               )}
               
@@ -369,10 +402,10 @@ export default function CapacityMap() {
             <div className="text-sm text-gray-300 space-y-1">
               <p><span className="text-gray-400">Capacity:</span> <span className="font-semibold">{hoveredMarker.marker.capacity_mw} MW</span></p>
               <p><span className="text-gray-400">Voltage:</span> {hoveredMarker.marker.voltage}</p>
-              {isQuickWin(hoveredMarker.marker) && (
+              {isFastTrack(hoveredMarker.marker) && (
                 <div className="flex items-center gap-1 text-green-400 font-semibold mt-2">
                   <Zap className="w-3 h-3" />
-                  Quick Win
+                  Fast Track
                 </div>
               )}
             </div>
@@ -490,10 +523,10 @@ export default function CapacityMap() {
                   {selectedMarker.type.toUpperCase()}
                 </div>
 
-                {isQuickWin(selectedMarker) && (
+                {isFastTrack(selectedMarker) && (
                   <div className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-bold bg-green-500/20 text-green-400 border border-green-500/30">
                     <Zap className="w-3 h-3" />
-                    Quick Win
+                    Fast Track
                   </div>
                 )}
               </div>
@@ -555,12 +588,12 @@ export default function CapacityMap() {
                           <span>{match.capacity_mw} MW</span>
                           <span>•</span>
                           <span>{match.voltage}</span>
-                          {isQuickWin(match) && (
+                          {isFastTrack(match) && (
                             <>
                               <span>•</span>
                               <span className="text-green-400 font-semibold flex items-center gap-1">
                                 <Zap className="w-3 h-3" />
-                                Quick Win
+                                Fast Track
                               </span>
                             </>
                           )}
@@ -640,16 +673,35 @@ export default function CapacityMap() {
               <form onSubmit={handleSubmitListing} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Location Name *
+                    Location *
+                  </label>
+                  <select
+                    required
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select a location...</option>
+                    {ukLocations.map((loc) => (
+                      <option key={loc.name} value={loc.name}>
+                        {loc.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Site Name (Optional)
                   </label>
                   <input
                     type="text"
-                    required
                     value={formData.locationName}
                     onChange={(e) => setFormData({ ...formData, locationName: e.target.value })}
                     className="w-full px-4 py-2.5 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="e.g., Oxford Substation"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Leave blank to use location name</p>
                 </div>
 
                 <div>
@@ -680,7 +732,7 @@ export default function CapacityMap() {
                   >
                     <option value="11kV">11kV</option>
                     <option value="33kV">33kV</option>
-                    <option value="132kV">132kV (Quick Win)</option>
+                    <option value="132kV">132kV (Fast Track)</option>
                   </select>
                 </div>
 
@@ -742,7 +794,7 @@ export default function CapacityMap() {
           </div>
           <div className="flex items-center gap-2 pt-2 border-t border-slate-700">
             <Zap className="w-3 h-3 md:w-4 md:h-4 text-green-400" />
-            <span className="text-xs md:text-sm">Quick Win (132kV)</span>
+            <span className="text-xs md:text-sm">Fast Track (132kV)</span>
           </div>
         </div>
       </div>
